@@ -1,97 +1,110 @@
 # Open Beacon
 
-A tiny, open-source demo of an **offline-first, role-based journey tracker** —
-built to be read, run, and learned from.
+Open Beacon is an offline-first learning application for exploring a
+role-based support journey. It uses fictional sample people and runs entirely
+in the browser.
 
-There is **no backend, no accounts, and no tracking**. The whole app runs in the
-browser: sample data lives in `localStorage`, so you can open it, click around
-as three different roles, and watch state persist across refreshes — with
-nothing to install on a server.
+There is no backend, account system, analytics, or remote data store. Progress
+is kept in browser storage and can be reset at any time.
 
-> This is a **teaching project**, not a product. It's meant to show one clean way
-> to structure a small role-based app. Fork it, rename it, and make it yours.
+## What it teaches
 
----
+- One shared data model can support several role-specific views.
+- A coordinator can see the full journey.
+- A guide can support an assigned group with plans, notes, and local messages.
+- A member can use a personal room with next steps, a focus timer, and optional
+  ambient sound.
+- Community requests can stay private or be shared anonymously by choice.
+- A searchable learning shelf can be adapted without adding a remote service.
+- Untrusted browser storage should be validated before an application uses it.
+- A service worker can provide limited offline support without caching private
+  or unrelated requests.
 
-## What it demonstrates
+## Privacy and security boundaries
 
-- **Next.js (App Router) + React + TypeScript** with no UI framework — just
-  plain CSS, so nothing hides how it works.
-- **An offline-first store** (`lib/store.tsx`): a React context backed by
-  `localStorage`, including the small-but-important trick of *gating render until
-  hydration* to avoid server/client mismatch.
-- **Role-based UI**: the same app shows a different view to a **Coordinator**, a
-  **Guide**, and a **Member** — all from one data model.
-- **A simple journey model** (`lib/journey.ts`): a linear set of stages a member
-  moves through, easy to swap for your own steps.
-- **PWA basics**: a web manifest and a minimal service worker so the app is
-  installable and works offline.
+Open Beacon is a local educational application, not an authentication or
+authorization system. Role selection changes the interface but does not prove
+identity.
 
-## The three roles
+Use only fictional or non-confidential data. A real multi-user deployment needs
+server-side authentication, authorization, secure storage, audit controls, and
+a separate security review.
 
-| Role | Sees | Can do |
-|------|------|--------|
-| **Coordinator** | The whole program — how many people are at each stage | Get the big picture |
-| **Guide** | Only the members assigned to them | Move a member to the next stage |
-| **Member** | Their own journey | Follow their progress |
+Saved data is bounded, validated, and normalized before use. Invalid data is
+discarded and replaced with the included sample.
 
-## The journey
+Messages, notes, requests, progress, preferences, and saved resources are
+simulations stored only in the current browser. Mini Orbit creates its ambient
+sound inside the browser and does not fetch, record, or upload audio.
 
-Five neutral, configurable stages — **Start → Connect → Grow → Apply →
-Complete**. Change the labels, colors, or number of stages in one place
-(`lib/journey.ts`) and the whole app follows.
+## Requirements
 
----
+- Node.js 20.9 or newer
+- npm 10 or newer
 
-## Run it locally
+## Run locally
 
-```bash
-npm install
+```text
+npm ci
 npm run dev
 ```
 
-Then open <http://localhost:3000> and pick a role.
+The development server accepts connections from this device only. Follow the
+terminal prompt to open it.
 
-To build for production:
+## Verify
 
-```bash
+```text
+npm test
 npm run build
-npm start
+npm audit
 ```
 
-Because it's just a static-ish Next.js app with no backend, it deploys to any
-Node or static host.
+The production build creates an `out` directory containing static files. Those
+files can be served locally or by any platform that supports static web assets.
+No platform-specific adapter is required.
 
----
+## Project map
 
-## How it's organized
-
-```
+```text
 app/
-  layout.tsx        # app shell + PWA registration
-  page.tsx          # landing: pick a role to explore
-  dashboard/page.tsx# role-aware dashboard (coordinator / guide / member)
-  globals.css       # all styling (plain CSS)
-lib/
-  store.tsx         # offline-first localStorage store (the core idea)
-  types.ts          # the data model (three roles, one list of people)
-  seed.ts           # fictional sample data
-  journey.ts        # the configurable stages
+  layout.tsx             Application shell and metadata
+  page.tsx               Role selection and journey introduction
+  dashboard/page.tsx     Coordinator, guide, and member workspaces
+  globals.css            Visual system and responsive layout
 components/
-  JourneyBar.tsx    # the progress bar
-  ServiceWorker.tsx # registers the service worker
+  Brand.tsx              Open Beacon mark and name
+  FeatureViews.tsx       People, community, library, messages, and settings
+  JourneyBar.tsx         Accessible journey progress
+  MiniOrbit.tsx          Local ambient sound and focus timer
+  RoleOverview.tsx       Role-specific overview panels
+  ServiceWorker.tsx      Offline worker registration
+  WorkspaceShell.tsx     Shared navigation and workspace layout
+lib/
+  content.ts             Learning resources, tasks, and announcements
+  journey.ts             Journey stages
+  seed.ts                Fictional sample data
+  store-data.mjs         Browser-storage validation
+  store.tsx              Local state and persistence
+  types.ts               Shared data types
 public/
-  manifest.webmanifest, sw.js, icon.svg
+  icon.svg               Application icon
+  manifest.webmanifest   Installable-app metadata
+  sw.js                  Same-origin public asset cache
+tests/
+  store-data.test.mjs    Storage-boundary regression tests
 ```
 
-## Make it your own
+## Adapt the sample
 
-- **Change the stages** → edit `lib/journey.ts`.
-- **Change the roles or data** → edit `lib/types.ts` and `lib/seed.ts`.
-- **Add persistence to a real backend** → the store is the only place that
-  touches storage; swap `localStorage` for your API of choice and the rest of
-  the app is unaffected.
+Journey stages, resources, tasks, and announcements live in small content
+files. Fictional people live in the seed file. Change those inputs first, then
+adjust a role view only when the learning model requires different behavior.
+
+Keep confidential data out of browser storage. If the project grows beyond a
+single-device sample, establish a server-side trust boundary before adding real
+people or permissions.
 
 ## License
 
-[MIT](./LICENSE) — do anything you like with it.
+Open Beacon is available under the MIT License.

@@ -11,15 +11,16 @@ export interface Stage {
 }
 
 export const STAGES: Stage[] = [
-  { key: 'start', label: 'Start', blurb: 'First hello', color: '#6366F1' },
-  { key: 'connect', label: 'Connect', blurb: 'Building trust', color: '#0EA5E9' },
-  { key: 'grow', label: 'Grow', blurb: 'Learning together', color: '#10B981' },
-  { key: 'apply', label: 'Apply', blurb: 'Putting it to work', color: '#F59E0B' },
-  { key: 'complete', label: 'Complete', blurb: 'Ready to give back', color: '#22C55E' },
+  { key: 'start', label: 'Start', blurb: 'Set a clear direction', color: '#7654a8' },
+  { key: 'connect', label: 'Connect', blurb: 'Build a trusted connection', color: '#4376b8' },
+  { key: 'grow', label: 'Grow', blurb: 'Learn through steady practice', color: '#2f9476' },
+  { key: 'apply', label: 'Apply', blurb: 'Put learning into action', color: '#d47c36' },
+  { key: 'complete', label: 'Complete', blurb: 'Reflect and help another', color: '#b28a2e' },
 ];
 
 export function stageAt(index: number): Stage {
-  const i = Math.max(0, Math.min(index, STAGES.length - 1));
+  const safeIndex = Number.isInteger(index) ? index : 0;
+  const i = Math.max(0, Math.min(safeIndex, STAGES.length - 1));
   return STAGES[i];
 }
 

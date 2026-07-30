@@ -1,11 +1,11 @@
 {
   "name": "Open Beacon",
   "short_name": "Open Beacon",
-  "description": "An open-source, offline-first, role-based journey demo.",
+  "description": "A private, offline-first role-based journey learning application.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f7f8fb",
-  "theme_color": "#111827",
+  "background_color": "#f4f6fa",
+  "theme_color": "#1d2b4f",
   "icons": [
     {
       "src": "/icon.svg",

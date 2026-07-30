@@ -1,23 +1,25 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
-import { StoreProvider } from '@/lib/store';
 import { ServiceWorker } from '@/components/ServiceWorker';
+import { StoreProvider } from '@/lib/store';
 
 export const metadata: Metadata = {
-  title: 'Open Beacon — a role-based journey demo',
+  title: 'Open Beacon | Role-based journey learning',
   description:
-    'An open-source, offline-first demo of a role-based journey tracker. No backend, no accounts, no tracking — everything runs in your browser.',
+    'Explore a private, offline-first role-based journey using fictional sample data.',
   applicationName: 'Open Beacon',
   manifest: '/manifest.webmanifest',
 };
 
 export const viewport: Viewport = {
-  themeColor: '#111827',
+  themeColor: '#1d2b4f',
   width: 'device-width',
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
       <body>
