@@ -2,15 +2,14 @@
 
 import { useEffect } from 'react';
 
-// Registers the service worker so the demo is installable and works offline.
-// Kept intentionally minimal — see public/sw.js.
 export function ServiceWorker() {
   useEffect(() => {
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {
-        /* offline support is a nice-to-have; ignore failures */
+      navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {
+        // Offline support is optional; registration failure does not block use.
       });
     }
   }, []);
+
   return null;
 }
