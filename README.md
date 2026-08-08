@@ -30,6 +30,35 @@ Use only fictional or non-confidential data. A real multi-user deployment needs
 server-side authentication, authorization, secure storage, audit controls, and
 a separate security review.
 
+## Reusable pieces
+
+These are the parts most worth stealing. Each is dependency-free, unit tested,
+and carries its reasoning in the file — including what it deliberately does not
+promise.
+
+| Module | What it solves | The non-obvious part |
+|---|---|---|
+| `lib/normalize.ts` | A saved state written by an older version of your app must still open in a newer one. | Derive the schema from the seed, never from a hand-written list. The list is a second place that has to be kept in step from memory, and it will be forgotten. |
+| `lib/rate-limit.mjs` | Bound a public write endpoint, and bound the email or webhooks it triggers. | Key it on something the caller cannot rotate for free, and never count refused attempts — that turns a cooling-off period into a lockout the attacker controls. |
+| `lib/trend.ts` | Show whether there is more happening than there was, rather than a total that only goes up. | The bucket in progress is marked, empty buckets are kept, and growth from zero returns `null` instead of claiming "up 100%". |
+| `components/TrendChart.tsx` | A readable bar chart in about eighty lines of SVG. | No charting library. Eight rectangles do not need sixty kilobytes of JavaScript, and the reader learns more from the rectangles. |
+| `lib/url.ts` | Stop a URL somebody typed becoming executable when it is rendered as a link. | An anchored allowlist of two schemes. A denylist of bad schemes never hears about the next one. |
+
+Run `npm test` to see them checked. The tests are as much of the documentation as
+the code is: each assertion names the failure it exists to prevent.
+
+### What is deliberately not here
+
+This project is the reusable part of a larger private application. Database
+schema, access-control policies, credentials and real user data are not in this
+repository and will not be accepted as contributions — see
+[SECURITY.md](SECURITY.md) for the boundary and the reasoning. A test enforces
+it, so the boundary is a promise rather than an intention.
+
+---
+
+## The three roles
+
 Saved data is bounded, validated, and normalized before use. Invalid data is
 discarded and replaced with the included sample.
 
