@@ -1,0 +1,55 @@
+# Run the checks on every push and every pull request.
+#
+# This repository is public and invites contributions, which makes automated
+# checks worth more here than in a private one: a maintainer should not be the
+# thing standing between a stranger's pull request and knowing whether it works.
+#
+# It also closes a specific hole. A broken module was pushed to this repository
+# once because the verification command was `npm test | grep ... && git push` —
+# and a pipeline's exit status is the LAST command's, so the push chained on grep
+# finding lines rather than on the tests passing. CI cannot make that mistake: it
+# runs `npm test` on its own and reads its own exit code.
+name: verify
+
+on:
+  push:
+    branches: [main]
+  # `pull_request`, never `pull_request_target`. The latter runs with repository
+  # secrets and a writable token while checking out a fork's code, and is the
+  # most common way a public repository is taken over through a pull request.
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # 22, and pinned deliberately: the test suites import TypeScript
+          # directly and rely on Node's native type stripping, so there is no
+          # build step between the code that ships and the code that is checked.
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
