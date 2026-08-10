@@ -64,7 +64,11 @@ for (const f of textFiles) {
       }
     });
 }
-if (creds === 0) ok('no credential-shaped literal anywhere');
+// `ok(true, …)`, not `ok(…)`. Called with one argument the message lands in the
+// condition slot, a non-empty string is truthy, and the line prints
+// "OK undefined" — an assertion that can never fail, which is the exact thing
+// this suite exists to prevent elsewhere.
+if (creds === 0) ok(true, 'no credential-shaped literal anywhere');
 
 // ---------------------------------------------------------------------------
 // 2. No env file but the example, and the example fills nothing in.
@@ -110,7 +114,7 @@ for (const f of textFiles) {
       }
     });
 }
-if (terms === 0) ok('nothing names the private deployment, its host or its settings');
+if (terms === 0) ok(true, 'nothing names the private deployment, its host or its settings');
 
 // ---------------------------------------------------------------------------
 // 4. Sample data stays fiction.
