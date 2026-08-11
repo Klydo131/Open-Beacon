@@ -1,39 +1,56 @@
 # Open Beacon
 
-Open Beacon is an offline-first learning application for exploring a
-role-based support journey. It uses fictional sample people and runs entirely
-in the browser.
+**An offline-first app for supporting people through a journey — a coordinator
+overseeing the whole group, guides walking with the people assigned to them, and
+members working through their own next steps.**
 
-There is no backend, account system, analytics, or remote data store. Progress
-is kept in browser storage and can be reset at any time.
+It is a complete, working application. Every feature runs today: people,
+journeys, private notes, messages, community requests, a searchable learning
+shelf, a focus timer and local ambience. Clone it, start it, and you are looking
+at a working group.
 
-> **New here? Read [docs/GUIDE.md](docs/GUIDE.md).** It is the long version of
-> this README: what the project is, a chapter on each reusable module explaining
-> the bug it exists to prevent, and a glossary that assumes no prior knowledge.
-> Every technical term is explained in plain words before it is used.
+**Bring your own backend, or bring none at all.**
 
-## What it teaches
+| | |
+|---|---|
+| **Run it as it ships** | Everything lives in your browser. No sign-up, no database, no configuration, nothing to breach. Ideal for one person, for training, or for deciding whether this fits. |
+| **Run it for real** | Connect your own database and it becomes a multi-user app on shared data. Which backend, and where it runs, is entirely your choice — this project deliberately does not pick one. |
 
-- One shared data model can support several role-specific views.
-- A coordinator can see the full journey.
-- A guide can support an assigned group with plans, notes, and local messages.
-- A member can use a personal room with next steps, a focus timer, and optional
-  ambient sound.
-- Community requests can stay private or be shared anonymously by choice.
-- A searchable learning shelf can be adapted without adding a remote service.
-- Untrusted browser storage should be validated before an application uses it.
-- A service worker can provide limited offline support without caching private
-  or unrelated requests.
+> **Making it real: [docs/BUILD-YOUR-OWN.md](docs/BUILD-YOUR-OWN.md).** Eleven
+> steps with a worked example at each one — the tables, accounts, the permission
+> rules, the adapter, and the write pattern that keeps it working offline. No
+> backend experience assumed.
+>
+> **Understanding it: [docs/GUIDE.md](docs/GUIDE.md).** The long version of this
+> README, with a glossary that assumes no prior knowledge.
 
-## Privacy and security boundaries
+## What you get
 
-Open Beacon is a local educational application, not an authentication or
-authorization system. Role selection changes the interface but does not prove
-identity.
+- One shared data model serving three role-specific views.
+- A coordinator who can see the full journey and reassign people.
+- Guides supporting an assigned group with plans, private notes and messages.
+- A member's personal room: next steps, a focus timer, optional ambient sound.
+- Community requests that stay private or are shared **anonymously** by choice.
+- A searchable learning shelf you can adapt without adding a remote service.
+- Real offline support: a service worker that never caches private or unrelated
+  requests.
+- Untrusted browser storage validated before the app ever uses it.
 
-Use only fictional or non-confidential data. A real multi-user deployment needs
-server-side authentication, authorization, secure storage, audit controls, and
-a separate security review.
+## Honest boundaries
+
+**As it ships, this is not an authentication or authorisation system.** Choosing
+a role changes the interface; it does not prove identity. Anybody can pick any
+role. That is correct for a single-device app with fictional people, and it is
+why it is safe to hand to anyone.
+
+**Use only fictional or non-confidential data until you have connected a
+backend.** The moment real people are involved you need server-side
+authentication, authorisation, secure storage and a security review — all of
+which are your responsibility, and all of which
+[docs/BUILD-YOUR-OWN.md](docs/BUILD-YOUR-OWN.md) walks you through.
+
+Two things to delete before real users, listed here so they are not missed: the
+role picker on the sign-in screen, and the sample people.
 
 ## Reusable pieces
 
@@ -54,11 +71,18 @@ the code is: each assertion names the failure it exists to prevent.
 
 ### What is deliberately not here
 
-This project is the reusable part of a larger private application. Database
-schema, access-control policies, credentials and real user data are not in this
-repository and will not be accepted as contributions — see
-[SECURITY.md](SECURITY.md) for the boundary and the reasoning. A test enforces
-it, so the boundary is a promise rather than an intention.
+**No database schema, access-control policies, credentials or real user data**,
+and none of those will be accepted as contributions.
+
+That is not the same as leaving you stranded. The
+[build guide](docs/BUILD-YOUR-OWN.md) gives you a complete worked schema and a
+complete set of rules to adapt. The difference is that they are **yours**, in your own
+deployment, rather than one organisation's real configuration published for
+everybody. A published schema is a map of that system for an attacker, and a
+copied one gives another team a false sense that their authorisation is solved.
+
+See [SECURITY.md](SECURITY.md) for the reasoning. A test enforces it, so the
+boundary is a promise rather than an intention.
 
 ---
 
@@ -131,13 +155,36 @@ tests/
 
 ## Adapt the sample
 
-Journey stages, resources, tasks, and announcements live in small content
-files. Fictional people live in the seed file. Change those inputs first, then
-adjust a role view only when the learning model requires different behavior.
+Journey stages, resources, tasks, and announcements live in small content files.
+Fictional people live in the seed file. Change those inputs first, then adjust a
+role view only when your model genuinely needs different behaviour.
 
-Keep confidential data out of browser storage. If the project grows beyond a
-single-device sample, establish a server-side trust boundary before adding real
-people or permissions.
+## Connect your own backend
+
+One property makes this app adoptable rather than only readable: **no screen
+touches storage.** Every screen calls `useStore()`, so there is exactly one
+place data comes from, and replacing it replaces everything.
+
+Three exports are the whole seam:
+
+```tsx
+import { StoreContext, type StoreApi } from '@/lib/store';
+
+function BackendProvider({ children }: { children: React.ReactNode }) {
+  const value: StoreApi = useMyBackend();   // TypeScript lists what is missing
+  return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
+}
+```
+
+Swap `<StoreProvider>` for that in `app/layout.tsx` and every screen keeps
+working, because no screen knows the difference. `tests/backend-seam.mjs`
+fails the build if that property is ever lost.
+
+**Full instructions, with a worked example at every step:
+[docs/BUILD-YOUR-OWN.md](docs/BUILD-YOUR-OWN.md).**
+
+Keep confidential data out of browser storage until that server-side trust
+boundary exists — not after.
 
 ## License
 

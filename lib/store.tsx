@@ -25,7 +25,33 @@ const MAX_BODY_CHARACTERS = 500;
 const MAX_ITEMS = 100;
 const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f-\u009f]/;
 
-interface StoreContext {
+/**
+ * THE BACKEND CONTRACT — everything this application can do.
+ *
+ * No screen reads or writes storage. Every screen calls `useStore()` and uses
+ * the functions below, which means this interface is the complete surface of
+ * the app: satisfy it and every screen works, unchanged, because no screen
+ * knows where the data came from.
+ *
+ * That is what makes this app adoptable rather than only readable. To put a
+ * real database behind it, implement this interface and provide it in place of
+ * `StoreProvider`:
+ *
+ *     const value: StoreApi = useMyBackend();
+ *     <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
+ *
+ * Type your object as `StoreApi` and the compiler becomes the checklist — it
+ * names every function still missing. See docs/BUILD-YOUR-OWN.md.
+ *
+ * NOTE ON THE SYNCHRONOUS SIGNATURES. The write actions return `boolean`, not
+ * `Promise<boolean>`, and that is deliberate rather than an oversight. `true`
+ * means "accepted and shown", not "durably stored on a server". An offline-first
+ * app must not make somebody wait for a network round trip before their message
+ * appears, and it must keep working with no network at all. A real backend
+ * therefore validates synchronously, updates locally, and writes in the
+ * background — the pattern is written out in full in docs/BUILD-YOUR-OWN.md.
+ */
+export interface StoreApi {
   store: Store;
   current: Person | null;
   signInAs: (id: string) => void;
@@ -45,7 +71,12 @@ interface StoreContext {
   reset: () => void;
 }
 
-const Context = createContext<StoreContext | null>(null);
+/**
+ * Exported so a real backend can be provided in its place. `StoreProvider`
+ * below is the built-in implementation — the one that keeps everything in the
+ * browser — and it is only one possible value for this context.
+ */
+export const StoreContext = createContext<StoreApi | null>(null);
 
 function saveStore(store: Store) {
   try {
@@ -417,7 +448,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   if (!ready) return null;
 
   return (
-    <Context.Provider
+    <StoreContext.Provider
       value={{
         store,
         current,
@@ -439,14 +470,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }}
     >
       {children}
-    </Context.Provider>
+    </StoreContext.Provider>
   );
 }
 
-export function useStore(): StoreContext {
-  const context = useContext(Context);
+/**
+ * How every screen reads and writes. Works with `StoreProvider` or with any
+ * other implementation of `StoreApi` you provide — the screens cannot tell the
+ * difference, which is the point.
+ */
+export function useStore(): StoreApi {
+  const context = useContext(StoreContext);
   if (!context) {
-    throw new Error('useStore must be used inside StoreProvider');
+    throw new Error(
+      'useStore must be used inside StoreProvider, or inside your own ' +
+        'StoreContext.Provider. See docs/BUILD-YOUR-OWN.md.',
+    );
   }
   return context;
 }
