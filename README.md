@@ -7,6 +7,11 @@ in the browser.
 There is no backend, account system, analytics, or remote data store. Progress
 is kept in browser storage and can be reset at any time.
 
+> **New here? Read [docs/GUIDE.md](docs/GUIDE.md).** It is the long version of
+> this README: what the project is, a chapter on each reusable module explaining
+> the bug it exists to prevent, and a glossary that assumes no prior knowledge.
+> Every technical term is explained in plain words before it is used.
+
 ## What it teaches
 
 - One shared data model can support several role-specific views.
