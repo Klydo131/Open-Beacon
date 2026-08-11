@@ -168,9 +168,18 @@ depends on that choice.
 The app already tells you exactly what it needs: `lib/types.ts` is every shape
 in one file, and `StoreApi` in `lib/store.tsx` is every operation.
 
-> **These examples are illustrative and have not been run against a live
-> database.** Adapt them; do not paste them blind. Create the tables in the
-> order shown, because each one references the tables above it.
+> **These have been run.** The complete, working version is
+> [`docs/examples/schema.sql`](examples/schema.sql), applied to a real
+> PostgreSQL 16 database and attacked from a second account by
+> [`docs/examples/prove-the-rules.sql`](examples/prove-the-rules.sql), which
+> passes 12 of 12.
+>
+> Prefer running that file to copying these blocks. **Order matters** — each
+> table references the ones above it, and a `language sql` function that reads
+> `people` cannot be created before `people` exists. An earlier draft of this
+> guide got that wrong.
+>
+> Adapt it for your deployment; do not adopt it blind.
 
 ```sql
 -- Everybody. One row per person, exactly like lib/types.ts Person.
@@ -337,86 +346,69 @@ including a screen somebody adds next year without reading this file.
 | An anonymous request shows no name | the name is never sent, not merely hidden |
 | Nobody changes their own role | `role` is never accepted from the client |
 
-### The SQL
+### The SQL — and it has been run
 
-```sql
-alter table people           enable row level security;
-alter table notes            enable row level security;
-alter table messages         enable row level security;
-alter table support_requests enable row level security;
+**Do not copy the blocks below from a document.** The complete, working schema
+and rules are two runnable files:
 
--- Yourself, the people you support, and your own guide.
-create policy "people i may see" on people
-for select using (
-  id = auth.uid()
-  or guide_id = auth.uid()
-  or exists (select 1 from people me
-             where me.id = auth.uid() and me.role = 'coordinator')
-);
+| File | What it is |
+|---|---|
+| [`docs/examples/schema.sql`](examples/schema.sql) | Tables, helpers, policies, the anonymity view, and the app's database role |
+| [`docs/examples/prove-the-rules.sql`](examples/prove-the-rules.sql) | Twelve attacks from a second account. Every line must print `PASS` |
 
--- Private notes: the author, and nobody else. No coordinator exception.
-create policy "own notes" on notes
-for all using (author_id = auth.uid())
-with check (author_id = auth.uid());
-
--- A conversation is visible to exactly the two people in it.
-create policy "own conversation" on messages
-for select using (
-  author_id = auth.uid() or participant_id = auth.uid()
-);
-
--- And you may only ever send as yourself.
-create policy "send as self" on messages
-for insert with check (author_id = auth.uid());
+```bash
+createdb beacon
+psql -d beacon -f docs/examples/schema.sql
+psql -d beacon -f docs/examples/prove-the-rules.sql
 ```
 
-### Anonymous means anonymous
+Both were applied to a real PostgreSQL 16 database and the proof passes 12 of
+12 from an empty database.
 
-"Shared anonymously" must not be a display decision. If the name is in the row
-and the screen hides it, anybody reading the data sees it.
+### What the first draft of this section got wrong
 
-```sql
--- The group reads this view, never the table.
-create view community_requests as
-select
-  id,
-  case when share_anonymously then null else person_id end as person_id,
-  body,
-  created_at
-from support_requests;
-```
+This section originally carried the SQL inline, written from experience and
+never executed. Running it found five defects, and they are listed here because
+every one is a trap you can hit independently.
 
-Now the name is **absent**, not hidden.
+**1. `auth.uid()` does not exist outside Supabase.** Six statements failed
+immediately with `schema "auth" does not exist`. This guide claims to be
+provider-neutral, and its SQL was not. `schema.sql` now defines the equivalent
+for vanilla Postgres, reading a session variable your app sets from a verified
+session.
 
-### Pin the role
+**2. That failure left RLS enabled with no policies at all.** Which is
+deny-everything for the application — while you, at a `psql` prompt as the
+table owner, still see every row and conclude it works. The worst possible
+combination.
 
-```sql
-create policy "update own profile" on people
-for update using (id = auth.uid()) with check (id = auth.uid());
+**3. The `people` policy recursed infinitely.** The coordinator check ran a
+sub-select against `people` from inside `people`'s own policy:
+`ERROR: infinite recursion detected in policy for relation "people"`. The app
+cannot list anybody at all. Fixed with `SECURITY DEFINER` helpers, which run as
+their owner and so do not re-trigger the policy.
 
-create or replace function pin_role()
-returns trigger language plpgsql as $$
-begin
-  new.role     := old.role;      -- whatever was sent, ignore it
-  new.guide_id := old.guide_id;
-  return new;
-end $$;
+**4. A member could not see their own guide.** The policy covered "me" and "the
+people I support" but not "the person supporting me". A member's room shows who
+supports them, and their conversation partner *is* their guide — so that
+omission left a member unable to contact the one person assigned to help them.
 
-create trigger people_pin_role
-  before update on people
-  for each row execute function pin_role();
-```
-
-A request setting `role = 'coordinator'` now succeeds and changes nothing —
-which is what you want, because an error tells an attacker they found the lever.
+**5. The anonymity view was a hole straight through RLS.** A Postgres view runs
+with its **owner's** permissions unless `security_invoker` is set, so the view
+returned every underlying row while direct access to the table correctly
+returned none. Anonymity worked; the row-level rules did not apply at all.
 
 ### Prove the rules
 
-Write a script that signs in as a **second guide** and tries to read the first
-one's notes. It must return zero rows.
+Run `prove-the-rules.sql`. It signs in as a second guide, an outsider, a member
+and a coordinator, and checks twelve things that should each be refused or
+allowed.
 
-Reading a policy and believing it is not the same as watching it refuse. Do this
-once per promise and keep the script; it is what you re-run after any change.
+**Connect as your application's role, not as the owner.** A superuser or table
+owner **bypasses RLS entirely**, so every check passes for the wrong reason.
+This is the most common way somebody proves rules that do not work.
+
+Reading a policy and believing it is not the same as watching it refuse.
 
 ---
 
